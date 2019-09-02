@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { SignalRService } from './services/signal-r.service';
 import { HttpClient } from '@angular/common/http';
+import { IMessageModel } from './models/message-model';
+import { ChatAppService } from './services/chat-app.service';
 
 @Component({
   selector: 'app-chat-app',
@@ -9,18 +11,37 @@ import { HttpClient } from '@angular/common/http';
 })
 export class ChatAppComponent implements OnInit {
 
-  constructor(public signalRService: SignalRService, private http: HttpClient) { }
+  messagesList: IMessageModel[] = [];
+
+  constructor(
+    private http: HttpClient,
+    private chatAppService: ChatAppService,
+    public signalRService: SignalRService,
+    ) {
+    this.getMessages();
+  }
 
   ngOnInit() {
     this.signalRService.startConnection();
-    this.signalRService.addTransferChartDataListener();
+    this.signalRService.messagesListener();
     // this.startHttpRequest();
   }
 
-  private startHttpRequest = () => {
-    this.http.get('/api/ChatMessaging/GetMessages')
-      .subscribe(res => {
-        console.log(res);
-      })
+  getMessages() {
+    this.signalRService.getMessages().subscribe((x: IMessageModel[]) => {
+      this.messagesList = x;
+    });
+  }
+
+  sendMessage(textMessage: any) {
+    console.log(textMessage);
+    const msgModel: IMessageModel = {
+      MessageId: 0,
+      TextMessage: textMessage,
+      Date: new Date()
+    };
+    this.chatAppService.sendMessage(msgModel).subscribe(x => {
+      console.log('Sent successfull');
+    });
   }
 }

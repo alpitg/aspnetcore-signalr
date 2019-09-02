@@ -1,13 +1,15 @@
 import { Injectable } from '@angular/core';
 import * as signalR from '@aspnet/signalr';
+import { IMessageModel } from '../models/message-model';
+import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SignalRService {
-  public data: any[];
-
-  private hubConnection: signalR.HubConnection
+  private hubConnection: signalR.HubConnection;
+  private messagesList$ = new BehaviorSubject<IMessageModel[]>([]);
+  // messagesList = this.messagesList$.asObservable();
 
   public startConnection = () => {
     this.hubConnection = new signalR.HubConnectionBuilder()
@@ -20,10 +22,19 @@ export class SignalRService {
       .catch(err => console.log('Error while starting connection: ' + err))
   }
 
-  public addTransferChartDataListener = () => {
-    this.hubConnection.on('ReceiveMessage', (data) => {
-      this.data = data;
-      console.log(data);
+  public getMessages() {
+    return this.messagesList$; 
+  }
+
+  public messagesListener = () => {
+    this.hubConnection.on('ReceiveMessage', (response: any) => {
+      console.log(response);
+      const responseObj: IMessageModel = {
+        MessageId: response.messageId,
+        TextMessage: response.textMessage,
+        Date: response.date
+      };
+      this.messagesList$.next([...this.messagesList$.value, responseObj]);
     });
     // this.hubConnection.onclose((e) => {
     //   console.log('Connection closed!', e);
